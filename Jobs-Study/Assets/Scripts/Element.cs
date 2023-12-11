@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -16,7 +17,17 @@ public sealed class Element : MonoBehaviour
     [SerializeField] private GameObject _physicsLayer;
     [SerializeField] private ElementTriggerLayer _triggerLayer;
 
+    private ElementEffect[] _elementEffects = new ElementEffect[8];
     private ObjectType _objectType = ObjectType.None;
+    private int _nextIndex = 0;
+
+    public void Update()
+    {
+        foreach (var effect in _elementEffects)
+        {
+            effect?.Update();
+        }
+    }
 
     public void Init(ObjectType type)
     {
@@ -35,26 +46,47 @@ public sealed class Element : MonoBehaviour
 
     private void ApplyObjectTypeEffect(ObjectType type)
     {
-        switch(type)
+        ElementEffect effect = new ElementEffect();
+        _elementEffects[_nextIndex++] = effect;
+
+        if(_nextIndex == _elementEffects.Length)
+        {
+            Array.Sort(_elementEffects, (x, y) =>
+            {
+                if (x != null && y != null)
+                    return 0;
+                else if (x != null)
+                    return -1;
+                
+                return 0;
+            });
+
+            for(int i = 0; i < _elementEffects.Length; ++i)
+            {
+                if (_elementEffects[i] == null)
+                {
+                    _nextIndex = i;
+                    break;
+                }
+            }
+        }
+
+        switch (type)
         {
             case ObjectType.Fire:
-                {
-                    ElementEffect effect = this.gameObject.AddComponent<ElementEffect>();
+                {   
                     effect.AddAttribute(new BurnEffect(10f, this.GetComponent<SpriteRenderer>()));
-
-                    effect.RequiredEffect = true;
                     effect.EffectRemovedEvent += OnEffectRemoved;
+                    effect.RequiredEffect = true;
                     SendEffectMask();
                     break;
                 }
 
             case ObjectType.Water:
                 {
-                    ElementEffect effect = this.gameObject.AddComponent<ElementEffect>();
                     effect.AddAttribute(new WaterEffect(this.GetComponent<SpriteRenderer>()));
-
-                    effect.RequiredEffect = true;
                     effect.EffectRemovedEvent += OnEffectRemoved;
+                    effect.RequiredEffect = true;
                     SendEffectMask();
                     break;
                 }
@@ -67,15 +99,16 @@ public sealed class Element : MonoBehaviour
     private void SendEffectMask()
     {
         int mask = 0;
-        ElementEffect[] elementEffects = this.GetComponents<ElementEffect>();
+        foreach (var effect in _elementEffects)
+        {
+            if (effect == null)
+                continue;
 
-        for(int i = 0; i < elementEffects.Length; ++i)
-        {
-            mask |= elementEffects[i].GetEventMask();
+            mask |= effect.GetEventMask();
         }
-        for (int i = 0; i < elementEffects.Length; ++i)
+        foreach (var effect in _elementEffects)
         {
-            elementEffects[i].OnEventMaskSent(mask);
+            effect?.OnEventMaskSent(mask);
         }
     }
 

@@ -5,10 +5,12 @@ public class Spawner : MonoBehaviour
     [SerializeField] private GameObject _spawnPrefab;
     [SerializeField] private Transform _spawnParent;
     [SerializeField] private int _spawnCount;
-    [SerializeField] private ObjectType _spawnType;
 
     private Camera _mainCamera;
     private Vector3 _previousMousePosition;
+
+    private const int _spawnCap = 2000;
+    private int _spwnedCount = 0;
 
     private void Start()
     {
@@ -17,30 +19,60 @@ public class Spawner : MonoBehaviour
 
     private void LateUpdate()
     {
-        // Is left mouse button pressed
-        if(Input.GetMouseButton(0))
+        if (_spwnedCount < _spawnCap)
         {
-            Vector3 currentMousePOsition = Input.mousePosition;
-            Vector3 worldPosition = _mainCamera.ScreenToWorldPoint(currentMousePOsition);
-            worldPosition.z = 0f;
-
-            for (int i = 0; i < _spawnCount; ++i)
+            // Is left mouse button pressed
+            if (Input.GetMouseButtonDown(0))
             {
-                var go = Instantiate(_spawnPrefab, worldPosition, Quaternion.identity, _spawnParent);
+                Vector3 currentMousePOsition = Input.mousePosition;
+                Vector3 worldPosition = _mainCamera.ScreenToWorldPoint(currentMousePOsition);
+                worldPosition.z = 0f;
 
-                var element = go.GetComponent<Element>();
-                element.Init(_spawnType);
-
-                Vector3 velocityOffset = Vector3.zero;
-                if(_spawnCount > 1)
+                for (int i = 0; i < _spawnCount; ++i)
                 {
-                    velocityOffset = new Vector3(Random.Range(-0.1f, 0.1f),
-                                                 Random.Range(-0.1f, 0.1f),
-                                                 Random.Range(-0.1f, 0.1f));
+                    ++_spwnedCount;
+                    var go = Instantiate(_spawnPrefab, worldPosition, Quaternion.identity, _spawnParent);
+
+                    var element = go.GetComponent<Element>();
+                    element.Init(ObjectType.Water);
+
+                    Vector3 velocityOffset = Vector3.zero;
+                    if (_spawnCount > 1)
+                    {
+                        velocityOffset = new Vector3(Random.Range(-0.1f, 0.1f),
+                                                     Random.Range(-0.1f, 0.1f),
+                                                     Random.Range(-0.1f, 0.1f));
+                    }
+                    Vector3 velocity = currentMousePOsition - _previousMousePosition;
+                    var rigidBody2D = go.GetComponent<Rigidbody2D>();
+                    rigidBody2D.velocity = velocity + velocityOffset;
                 }
-                Vector3 velocity = currentMousePOsition - _previousMousePosition;
-                var rigidBody2D = go.GetComponent<Rigidbody2D>();
-                rigidBody2D.velocity = velocity + velocityOffset;
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                Vector3 currentMousePOsition = Input.mousePosition;
+                Vector3 worldPosition = _mainCamera.ScreenToWorldPoint(currentMousePOsition);
+                worldPosition.z = 0f;
+
+                for (int i = 0; i < _spawnCount; ++i)
+                {
+                    ++_spwnedCount;
+                    var go = Instantiate(_spawnPrefab, worldPosition, Quaternion.identity, _spawnParent);
+
+                    var element = go.GetComponent<Element>();
+                    element.Init(ObjectType.Fire);
+
+                    Vector3 velocityOffset = Vector3.zero;
+                    if (_spawnCount > 1)
+                    {
+                        velocityOffset = new Vector3(Random.Range(-0.1f, 0.1f),
+                                                     Random.Range(-0.1f, 0.1f),
+                                                     Random.Range(-0.1f, 0.1f));
+                    }
+                    Vector3 velocity = currentMousePOsition - _previousMousePosition;
+                    var rigidBody2D = go.GetComponent<Rigidbody2D>();
+                    rigidBody2D.velocity = velocity + velocityOffset;
+                }
             }
         }
         _previousMousePosition = Input.mousePosition;

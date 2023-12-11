@@ -2,23 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class ElementEffect : MonoBehaviour
+public sealed class ElementEffect
 {
-    private Element _contextTarget;
     private List<EffectAttribute> _attributes = new List<EffectAttribute>();
 
     public Action<ElementEffect> EffectRemovedEvent;
 
     public bool RequiredEffect { get; set; }
-
-    private void Start()
-    {
-        _contextTarget = this.transform.GetComponent<Element>();
-        if(_contextTarget == null)
-        {
-            Destroy(this); // Remove the component
-        } 
-    }
 
     public void Update()
     {
@@ -28,7 +18,7 @@ public sealed class ElementEffect : MonoBehaviour
             EffectAttribute attribute = _attributes[i];
             if (attribute.AttributeExpired())
             {
-                 _attributes.RemoveAt(i);
+                _attributes.RemoveAt(i);
                 --i;
             }
             else
@@ -75,7 +65,6 @@ public sealed class ElementEffect : MonoBehaviour
         if(resolved)
         {
             EffectRemovedEvent?.Invoke(this);
-            Destroy(this); // Remove the component
         }
         return resolved;
     }
