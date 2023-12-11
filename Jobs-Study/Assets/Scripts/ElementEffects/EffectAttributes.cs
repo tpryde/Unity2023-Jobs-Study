@@ -32,7 +32,7 @@ public struct BurnEffect : EffectAttribute
     {
         _remainingLifeTime -= delta;
 
-        float pct = _lifeTime / _remainingLifeTime;
+        float pct = _remainingLifeTime / _lifeTime;
         Color col = Color.red;
         col.a = pct;
         _spriteRenderer.color = col;
