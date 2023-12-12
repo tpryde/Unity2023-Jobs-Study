@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.VirtualTexturing;
 
 public sealed class ElementEffect
 {
@@ -10,23 +11,22 @@ public sealed class ElementEffect
 
     public bool RequiredEffect { get; set; }
 
-    public void Update()
+    public void Update(float deltaTime)
     {
-        float deltaTime = Time.deltaTime;
+        int count = 0;
         for (int i = 0; i < _attributes.Count; ++i)
         {
             EffectAttribute attribute = _attributes[i];
-            if (attribute.AttributeExpired())
-            {
-                _attributes.RemoveAt(i);
-                --i;
-            }
-            else
+            if (!attribute.AttributeExpired())
             {
                 attribute.Tick(deltaTime);
+                ++count;
             }
         }
-        TryResolveElementEffect();
+        if (count == 0)
+        {
+            EffectRemovedEvent?.Invoke(this);
+        }
     }
 
     public void AddAttribute(EffectAttribute attribute)
@@ -46,26 +46,23 @@ public sealed class ElementEffect
 
     public void OnEventMaskSent(int mask)
     {
+        int count = 0;
         for(int i = 0; i < _attributes.Count; ++i)
         {
             EffectAttribute attribute = _attributes[i];
             int cancelationMask = attribute.GetCancelationMask();
             if ((mask & cancelationMask) == cancelationMask)
             {
-                _attributes.RemoveAt(i);
-                --i;
+                attribute.End();
+            }
+            else
+            {
+                ++count;
             }
         }
-        TryResolveElementEffect();
-    }
-
-    private bool TryResolveElementEffect()
-    {
-        bool resolved = _attributes.Count == 0;
-        if(resolved)
+        if (count == 0)
         {
             EffectRemovedEvent?.Invoke(this);
         }
-        return resolved;
     }
 }
