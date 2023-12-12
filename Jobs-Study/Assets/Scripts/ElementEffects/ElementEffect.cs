@@ -5,7 +5,7 @@ using UnityEngine.Rendering.VirtualTexturing;
 
 public sealed class ElementEffect
 {
-    private List<EffectAttribute> _attributes = new List<EffectAttribute>();
+    private EffectAttribute[] _attributes;
 
     public Action<ElementEffect> EffectRemovedEvent;
 
@@ -14,7 +14,7 @@ public sealed class ElementEffect
     public void Update(float deltaTime)
     {
         int count = 0;
-        for (int i = 0; i < _attributes.Count; ++i)
+        for (int i = 0; i < _attributes.Length; ++i)
         {
             EffectAttribute attribute = _attributes[i];
             if (!attribute.AttributeExpired())
@@ -29,9 +29,18 @@ public sealed class ElementEffect
         }
     }
 
-    public void AddAttribute(EffectAttribute attribute)
+    public void AddAttribute(params EffectAttribute[] attributes)
     {
-        _attributes.Add(attribute);
+        if (_attributes == null)
+        {
+            _attributes = attributes;
+        }
+        else
+        {
+            int originalLength = _attributes.Length;
+            Array.Resize(ref _attributes, _attributes.Length + attributes.Length);
+            attributes.CopyTo(_attributes, originalLength);
+        }
     }
 
     public int GetEventMask()
@@ -47,7 +56,7 @@ public sealed class ElementEffect
     public void OnEventMaskSent(int mask)
     {
         int count = 0;
-        for(int i = 0; i < _attributes.Count; ++i)
+        for(int i = 0; i < _attributes.Length; ++i)
         {
             EffectAttribute attribute = _attributes[i];
             int cancelationMask = attribute.GetCancelationMask();
