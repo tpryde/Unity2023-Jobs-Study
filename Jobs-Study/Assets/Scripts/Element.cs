@@ -1,8 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 
 public enum ObjectType
@@ -18,59 +15,62 @@ public sealed class Element : MonoBehaviour
     [SerializeField] private ElementTriggerLayer _triggerLayer;
 
     private ElementEffect[] _elementEffects = new ElementEffect[8];
+    private SpriteRenderer _spriteRenderer;
+    private Rigidbody2D _rigidBody;
     private ObjectType _objectType = ObjectType.None;
-    private int _nextIndex = 0;
 
     public void Update()
     {
-        foreach (var effect in _elementEffects)
+        float deltaTime = Time.deltaTime;
+        foreach (ElementEffect effect in _elementEffects)
         {
-            effect?.Update();
+            effect?.Update(deltaTime);
         }
+    }
+
+    private void Activate()
+    {
+        this.enabled = true;
+
+        _physicsLayer.layer = 6; // Physics
+        _triggerLayer.gameObject.layer = 7; // Trigger
+        _spriteRenderer.enabled = true;
+        _rigidBody.simulated = true;
+    }
+
+    private void Disable()
+    {
+        this.enabled = false;
+
+        _elementEffects = new ElementEffect[8];
+
+        _physicsLayer.layer = 8; // None
+        _triggerLayer.gameObject.layer = 8; // None
+        _spriteRenderer.enabled = false;
+        _rigidBody.simulated = false;
     }
 
     public void Init(ObjectType type)
     {
+        if (_spriteRenderer == null)
+        {
+            _spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+        if (_rigidBody == null)
+        {
+            _rigidBody = GetComponent<Rigidbody2D>();
+        }
+
+        Activate();
+
         _objectType = type;
         ApplyObjectTypeEffect(type);
-
-        if (type == ObjectType.None)
-        {
-            _triggerLayer.gameObject.SetActive(false);
-        }
-        else
-        {
-            _triggerLayer.ElementEffectTransferEvent += OnObjectTrigger;
-        }
+        _triggerLayer.ElementEffectTransferEvent += OnObjectTrigger;
     }
 
     private void ApplyObjectTypeEffect(ObjectType type)
     {
         ElementEffect effect = new ElementEffect();
-        _elementEffects[_nextIndex++] = effect;
-
-        if(_nextIndex == _elementEffects.Length)
-        {
-            Array.Sort(_elementEffects, (x, y) =>
-            {
-                if (x != null && y != null)
-                    return 0;
-                else if (x != null)
-                    return -1;
-                
-                return 0;
-            });
-
-            for(int i = 0; i < _elementEffects.Length; ++i)
-            {
-                if (_elementEffects[i] == null)
-                {
-                    _nextIndex = i;
-                    break;
-                }
-            }
-        }
-
         switch (type)
         {
             case ObjectType.Fire:
@@ -78,7 +78,6 @@ public sealed class Element : MonoBehaviour
                     effect.AddAttribute(new BurnEffect(10f, this.GetComponent<SpriteRenderer>()));
                     effect.EffectRemovedEvent += OnEffectRemoved;
                     effect.RequiredEffect = true;
-                    SendEffectMask();
                     break;
                 }
 
@@ -87,12 +86,31 @@ public sealed class Element : MonoBehaviour
                     effect.AddAttribute(new WaterEffect(this.GetComponent<SpriteRenderer>()));
                     effect.EffectRemovedEvent += OnEffectRemoved;
                     effect.RequiredEffect = true;
-                    SendEffectMask();
                     break;
                 }
 
             default:
                 break;
+        }
+
+        int nextIndex = -1;
+        int mask = effect.GetEventMask();
+        for(int i = 0; i < _elementEffects.Length; ++i)
+        {
+            if(_elementEffects[i] == null)
+            {
+                nextIndex = i;
+            }
+            else if ((mask & _elementEffects[i].GetEventMask()) == _elementEffects[i].GetEventMask())
+            {
+                return;
+            }
+        }
+
+        if (nextIndex >= 0)
+        {
+            _elementEffects[nextIndex] = effect;
+            SendEffectMask();
         }
     }
 
@@ -123,6 +141,28 @@ public sealed class Element : MonoBehaviour
     private void OnEffectRemoved(ElementEffect effect)
     {
         if (effect.RequiredEffect)
-            Destroy(this.gameObject);
+        {
+            Disable();
+        }
+        else
+        {
+            int count = 0;
+            for (int i = 0; i < _elementEffects.Length; ++i)
+            {
+                if (_elementEffects[i] == effect)
+                {
+                    _elementEffects[i] = null;
+                }
+                else if (_elementEffects[i] != null)
+                {
+                    ++count;
+                }
+            }
+
+            if (count == 0)
+            {
+                Disable();
+            }
+        }
     }
 }

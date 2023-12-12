@@ -8,6 +8,7 @@ public interface EffectAttribute
     public const int WATER_MASK = 1 << 2;
 
     void Tick(float delta);
+    void End();
     void Reset();
     bool AttributeExpired();
     int GetEffectMask();
@@ -30,12 +31,20 @@ public struct BurnEffect : EffectAttribute
 
     public void Tick(float delta)
     {
-        _remainingLifeTime -= delta;
+        if (_remainingLifeTime > 0f)
+        {
+            _remainingLifeTime -= delta;
 
-        float pct = _remainingLifeTime / _lifeTime;
-        Color col = Color.red;
-        col.a = pct;
-        _spriteRenderer.color = col;
+            float pct = _remainingLifeTime / _lifeTime;
+            Color col = Color.red;
+            col.a = pct;
+            _spriteRenderer.color = col;
+        }
+    }
+
+    public void End()
+    {
+        _remainingLifeTime = 0;
     }
 
     public void Reset()
@@ -68,6 +77,8 @@ public struct WaterEffect : EffectAttribute
     }
 
     public void Tick(float delta) { }
+
+    public void End() { }
 
     public void Reset() { }
 
