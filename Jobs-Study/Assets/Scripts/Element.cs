@@ -21,10 +21,15 @@ public sealed class Element : MonoBehaviour
 
     public void Update()
     {
-        float deltaTime = Time.deltaTime;
+        if(!Spawner.s_hasUpdatedDeltaTime)
+        {
+            Spawner.s_sharedDeltaTime = Time.deltaTime;
+            Spawner.s_hasUpdatedDeltaTime = true;
+        }
+
         foreach (ElementEffect effect in _elementEffects)
         {
-            effect?.Update(deltaTime);
+            effect?.Update(Spawner.s_sharedDeltaTime);
         }
     }
 

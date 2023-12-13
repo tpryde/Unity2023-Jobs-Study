@@ -17,9 +17,8 @@ public sealed class ElementEffect
         for (int i = 0; i < _attributes.Length; ++i)
         {
             EffectAttribute attribute = _attributes[i];
-            if (!attribute.AttributeExpired())
+            if (attribute.Tick(deltaTime))
             {
-                attribute.Tick(deltaTime);
                 ++count;
             }
         }

@@ -12,6 +12,9 @@ public class Spawner : MonoBehaviour
     private Camera _mainCamera;
     private int _nextSpawnIndex = 0;
 
+    public static float s_sharedDeltaTime = 0f;
+    public static bool s_hasUpdatedDeltaTime = false;
+
     private void Start()
     {
         _mainCamera = Camera.main;
@@ -19,6 +22,8 @@ public class Spawner : MonoBehaviour
 
     private void LateUpdate()
     {
+        s_hasUpdatedDeltaTime = false;
+
         // Is left mouse button pressed
         if (Input.GetMouseButtonDown(0))
         {
@@ -34,8 +39,8 @@ public class Spawner : MonoBehaviour
 
     private void SpawnObjectOfType(ObjectType type)
     {
-        Vector3 currentMousePOsition = Input.mousePosition;
-        Vector3 worldPosition = _mainCamera.ScreenToWorldPoint(currentMousePOsition);
+        Vector3 currentMousePosition = Input.mousePosition;
+        Vector3 worldPosition = _mainCamera.ScreenToWorldPoint(currentMousePosition);
         worldPosition.z = 0f;
 
         for (int i = 0; i < _spawnCount; ++i)
@@ -56,7 +61,7 @@ public class Spawner : MonoBehaviour
                                              Random.Range(-0.1f, 0.1f),
                                              Random.Range(-0.1f, 0.1f));
             }
-            Vector3 velocity = currentMousePOsition - _previousMousePosition;
+            Vector3 velocity = currentMousePosition - _previousMousePosition;
             var rigidBody2D = element.GetComponent<Rigidbody2D>();
             float magnitude = Mathf.Clamp((velocity + velocityOffset).magnitude, -10f, 10f);
 
